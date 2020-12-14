@@ -29,6 +29,7 @@ class Graph(object):
         """
 
         self.client = pyorient.OrientDB(config.host, config.port, config.serialization_type)
+        self.client.set_session_token(True)
         self.client.connect(config.user, config.cred)
 
         self.config = config
