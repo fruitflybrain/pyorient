@@ -29,7 +29,8 @@ class Graph(object):
         """
 
         self.client = pyorient.OrientDB(config.host, config.port, config.serialization_type)
-        self.client.set_session_token(True)
+        # Must set it to True for OrientDB > 3.1, but has connection issue. Use 3.0.x for now.
+        #self.client.set_session_token(True)
         self.client.connect(config.user, config.cred)
 
         self.config = config
