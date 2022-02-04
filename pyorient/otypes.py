@@ -128,7 +128,7 @@ class OrientRecord(object):
         return self.__rid == other or self.__dict__ == other.__dict__
 
     def __hash__(self):
-        return hash((self.__rid, self.__version, self.__o_class, frozenset(iteritems(self.__o_storage))))
+        return hash((self.__rid, self.__version, self.__o_class))
 
     def __contains__(self, key):
         return key in self.__o_storage
