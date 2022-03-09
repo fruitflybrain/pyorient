@@ -492,9 +492,9 @@ class BaseMessage(object):
             res = OrientRecord(
                 dict(
                     __o_storage=data,
-                    __o_class=class_name,
-                    __version=__res['version'],
-                    __rid=__res['rid']
+                    __o_class=data.pop('class', class_name),
+                    __version=data.pop('version', __res['version']),
+                    __rid= get_hash(data.pop('rid')) if 'rid' in data is not None else __res['rid']
                 )
             )
 
@@ -503,3 +503,13 @@ class BaseMessage(object):
         self._input_buffer = b''
 
         return res
+
+def get_hash(r):
+    if isinstance(r, tuple):
+        if r[0] == 'OrientRecordLink':
+            rid = '#{}:{}'.format(r[1], r[2])
+        else:
+            raise TypeError('Not sure what the output format is.')
+    elif isinstance(r, OrientRecordLink):
+        rid = r.get_hash()
+    return rid
