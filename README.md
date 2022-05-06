@@ -6,10 +6,11 @@
 **develop**   
 [![Build Status](https://travis-ci.org/mogui/pyorient.svg?branch=develop)](https://travis-ci.org/mogui/pyorient) [![Coverage Status](https://coveralls.io/repos/mogui/pyorient/badge.svg?branch=develop&service=github)](https://coveralls.io/github/mogui/pyorient?branch=develop)
 
-
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
-Pyorient works with orientdb versions from 1.7 to 2.x.
+> **Note**: checkout branch `2.2.x` for connecting to OrientDB version `2.2.x` and branch `3.1.x` for OrientDB version `3.1.x`. However, be aware that version `3.1.x` is work in progress and not fully functional yet and **not** recommended for "productive use" or "benchmarking".
+
+Pyorient works with orientdb version 1.7 and later.
 > **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
 
 > **NOTICE** Prior to version 1.4.9 there was a potential SQL injection vulnerability that now is fixed.
@@ -39,6 +40,37 @@ Pyorient works with orientdb versions from 1.7 to 2.x.
 - bootstrap orient by running `./ci/start-ci.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
 - run with `nosetests`
+
+## Using this library with OrientDB 3.1+
+As of OrientDB 3.1+, session tokens are now required for interacting with databases. You can find a brief description 
+of how to use [session tokens below](#persistent-connections---session-token) for older version, but now they are 
+enabled by default when a client is initialized:
+```python
+client = pyorient.OrientDB("localhost", 2424)
+client.db_open("GratefulDeadConcerts", "admin", "admin")
+client.command("create class my_class if not exists extends V")
+client.command(f"insert into my_class (row_id, work, holiday) values (1, 'banker', 'christmas')")
+client.query('select from V limit 1')
+```
+
+Note that one can connect to a database and run commands and queries within that database without a session ID. Some 
+methods will require creating a session ID in order to perform (e.g. checking the existence of a database or creating
+a new one):
+```python
+client = pyorient.OrientDB("localhost", 2424)
+client.db_exists("GratefulDeadConcerts")
+# Results in an error: pyorient.exceptions.PyOrientSecurityException: 
+# com.orientechnologies.orient.enterprise.channel.binary.OTokenSecurityException - missing session and token
+```
+
+To create new databases, or perform other restricted actions, you must connect to the client with approved user 
+credentials:
+```python
+client = pyorient.OrientDB("localhost", 2424)
+client.connect("root", "rootPassword")
+client.db_exists("GratefulDeadConcerts")
+# True
+```
 
 ## Usage
 > Proper documentation will be available soon, for now you have to read the tests.
@@ -218,7 +250,7 @@ cmd = ("begin;"
     edge_result = self.client.batch(cmd)
 ```
 
-### Persistent Connections ( Session Token )
+### Persistent Connections - Session Token
 Since version 27 is introduced an extension to allow use a token based session. This functionality must be enabled on the server config.
 
 - In the first negotiation the client can ask for a token based authentication using the ```client.set_session_token``` method.
@@ -320,10 +352,6 @@ for food in animal_foods:
 ## Authors
 - [mogui](https://github.com/mogui/)
 - [ostico](https://github.com/ostico/)
-
-## Thanks
-To **Jetbrains** tools support, coded with:    
-[<img src="https://i.imgur.com/LcUZzzW.png" width="70"/>](https://www.jetbrains.com/)
 
 ## Copyright
 

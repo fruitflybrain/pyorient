@@ -24,6 +24,7 @@ import warnings
 
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
+
 class Graph(object):
     def __init__(self, config, user=None, cred=None, *args, **kwargs):
         """Connect to OrientDB graph database, creating the database if
@@ -42,14 +43,16 @@ class Graph(object):
                                         config.serialization_type,
                                         config.serialize_props)
 		# Must set it to True for OrientDB > 3.1, but has connection issue. Use 3.0.x for now.
-        #self.client.set_session_token(True)
+        self.client.set_session_token(True)
         self.client.connect(config.user, config.cred)
 
         self.config = config
 
+        self._new_db = False
         if config.initial_drop:
             self._last_db = self._last_user = self._last_cred = None
             self.drop()
+            self._new_db = True
 
         db_name = config.db_name
         if db_name:
@@ -93,9 +96,10 @@ class Graph(object):
         # NOTE Odd behaviour; if storage not passed to db_exists, db_create
         # ignores storage
         if not self.client.db_exists(db_name, storage):
-            self.client.db_create(db_name
-                                  , pyorient.DB_TYPE_GRAPH
-                                  , storage)
+            self.client.db_create(db_name,
+                                  pyorient.DB_TYPE_GRAPH,
+                                  storage)
+            self._new_db = True
 
         if not (user and cred):
             user = config.user
@@ -105,7 +109,6 @@ class Graph(object):
         self._last_db = db_name
 
         cluster_map = self.client.db_open(db_name, user, cred)
-
 
         self.server_version = ServerVersion(
             self.client.version.major, self.client.version.minor, self.client.version.build)
@@ -122,18 +125,18 @@ class Graph(object):
         self.client.connect(config.user, config.cred)
         try:
             dropped_db = db_name or config.db_name
-            self.client.db_drop(db_name or config.db_name
-                                   , storage or config.storage)
+            self.client.db_drop(db_name or config.db_name,
+                                storage or config.storage)
         except:
             return False
+
         finally:
             last_db = self._last_db
             if last_db and last_db is not dropped_db:
                 # In case we aren't dropping the currently-configured database,
                 # ensure we are still able to use it.
-                self.client.db_open(last_db
-                                    , self._last_user, self._last_cred)
-        return True
+                self.client.db_open(last_db, self._last_user, self._last_cred)
+            return True
 
     def include(self, registry, *registries):
         """Update Graph's registry, when database schema already exists.
@@ -285,19 +288,19 @@ class Graph(object):
         return registry
 
     _GROOVY_GET_DB = \
-    '''def db = new com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx("remote:{}:{}/{}");
+        '''def db = new com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx("remote:{}:{}/{}");
     db.open("{}", "{}");
     '''
 
     _GROOVY_NULL_LISTENER = \
-    '''def listener = new com.orientechnologies.orient.core.command.OCommandOutputListener() {
+        '''def listener = new com.orientechnologies.orient.core.command.OCommandOutputListener() {
         @Override
         public void onMessage(String iText) {}
     };
     '''
 
     _GROOVY_TRY = \
-    '''try {{
+        '''try {{
     {}
     {}
     }} finally {{
@@ -326,7 +329,8 @@ class Graph(object):
         import_optionals = ''
 
         if preserve_cluster_ids is not None:
-            import_optionals += 'dbImport.setPreserveClusterIDs({});'.format('true' if preserve_cluster_ids else 'false')
+            import_optionals += 'dbImport.setPreserveClusterIDs({});'.format(
+                'true' if preserve_cluster_ids else 'false')
         if delete_rid_mapping is not None:
             import_optionals += 'dbImport.setDeleteRIDMapping({});'.format('true' if delete_rid_mapping else 'false')
         if self.server_version >= (1, 6, 1):
@@ -341,7 +345,7 @@ class Graph(object):
             'def dbImport = new com.orientechnologies.orient.core.db.tool.ODatabaseImport(db, "{}", listener);'
 
         import_commands = \
-        '''{}
+            '''{}
         {}
         dbImport.importDatabase();
         dbImport.close();
@@ -397,7 +401,8 @@ class Graph(object):
         if include_info is not None:
             export_optionals += 'export.setIncludeInfo({});'.format('true' if include_info else 'false')
         if cluster_definitions is not None:
-            export_optionals += 'export.setIncludeClusterDefinitions({});'.format('true' if cluster_definitions else 'false')
+            export_optionals += 'export.setIncludeClusterDefinitions({});'.format(
+                'true' if cluster_definitions else 'false')
         if schema is not None:
             export_optionals += 'export.setIncludeSchema({});'.format('true' if schema else 'false')
         if security is not None:
@@ -419,7 +424,7 @@ class Graph(object):
             'def export = new com.orientechnologies.orient.core.db.tool.ODatabaseExport(db, "{}", listener);'
 
         export_commands = \
-        '''{}
+            '''{}
         {} {}
         export.exportDatabase();
         export.close();
@@ -450,7 +455,6 @@ class Graph(object):
     #        :param buffer_size: Compression buffer size, in bytes
     #     """
     #     pass
-
 
     def clear_registry(self):
         """Clear the registry and associated brokers.
@@ -515,9 +519,9 @@ class Graph(object):
             try:
                 self.client.command(
                     'CREATE PROPERTY {} {} {}'
-                        .format(class_prop
-                                , type(prop_value).__name__
-                                , linked_to or ''))
+                        .format(class_prop,
+                                type(prop_value).__name__,
+                                linked_to or ''))
             except pyorient.PyOrientCommandException:
                 # Property already exists
                 pass
@@ -534,28 +538,28 @@ class Graph(object):
             if not prop_value._nullable:
                 self.client.command(
                         'ALTER PROPERTY {} NOTNULL {}'
-                            .format(class_prop
-                                    , str(not prop_value._nullable).lower()))
+                            .format(class_prop,
+                                    str(not prop_value._nullable).lower()))
 
             if prop_value._mandatory:
                 self.client.command(
                         'ALTER PROPERTY {} MANDATORY {}'
-                            .format(class_prop
-                                    , str(prop_value._mandatory).lower()))
+                            .format(class_prop,
+                                    str(prop_value._mandatory).lower()))
 
             if prop_value._readonly:
                 self.client.command(
                         'ALTER PROPERTY {} READONLY {}'
-                            .format(class_prop
-                                    , str(prop_value._readonly).lower()))
+                            .format(class_prop,
+                                    str(prop_value._readonly).lower()))
 
             # TODO Add support for composite indexes
             if prop_value._indexed:
                 try:
                     self.client.command(
                         'CREATE INDEX {} {}'
-                            .format(class_prop
-                                    , 'UNIQUE' if prop_value._unique
+                            .format(class_prop,
+                                    'UNIQUE' if prop_value._unique
                                       else 'NOTUNIQUE'))
                 except pyorient.PyOrientIndexException:
                     # Index already exists
@@ -640,7 +644,7 @@ class Graph(object):
 
     def create_vertex(self, vertex_cls, *args, **kwargs):
         result = self.client.command(
-            to_unicode(self.create_vertex_command(vertex_cls, *args, **kwargs)))[0]
+            str(self.create_vertex_command(vertex_cls, *args, **kwargs)))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
@@ -653,7 +657,7 @@ class Graph(object):
         return VertexCommand(
             u'CREATE VERTEX {}{}'.format(class_name, self.create_content_clause(vertex_cls, expressions, *args, **kwargs)))
 
-    def delete_vertex(self, vertex, where = None, limit=None, batch=None):
+    def delete_vertex(self, vertex, where=None, limit=None, batch=None):
         # TODO FIXME Parse delete result
         result = self.client.command(to_unicode(self.delete_vertex_command(vertex, where, limit, batch)))
 
@@ -662,7 +666,7 @@ class Graph(object):
 
         delete_clause = ''
         if where is not None:
-            where_clause = ''
+
             if isinstance(where, dict):
                 where_clause = u' and '.join(u'{}={}'
                     .format(PropertyEncoder.encode_name(k)
@@ -682,11 +686,11 @@ class Graph(object):
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, *args, **kwargs):
         result = self.client.command(
-            to_unicode(self.create_edge_command(edge_cls
-                                     , from_vertex
-                                     , to_vertex
-                                     , *args
-                                     , **kwargs)))[0]
+            to_unicode(self.create_edge_command(edge_cls,
+                                           	    from_vertex,
+                                     			to_vertex,
+                                     			*args,
+                                     			**kwargs)))[0]
 
         return self.edge_from_record(result, edge_cls)
 
@@ -763,7 +767,7 @@ class Graph(object):
         else:
             set_clause = ''
 
-        result = self.client.command(u'UPDATE ' + elem_id + set_clause)
+        result = self.client.command(u'UPDATE {}{}'.format(elem_id, set_clause))
         return result and (result[0] == 1 or result[0] == b'1')
 
     def query(self, first_entity, *entities):
@@ -902,10 +906,10 @@ class Graph(object):
             vertex_cls = self.registry.get(record._class)
 
         props = record.oRecordData
-        return vertex_cls.from_graph(self
-             , record._rid
-             , self.props_from_db[vertex_cls](props, cache)
-             , self._element_cache(cache)) if vertex_cls \
+        return vertex_cls.from_graph(self,
+             						 record._rid,
+             						 self.props_from_db[vertex_cls](props, cache),
+             						 self._element_cache(cache)) if vertex_cls \
             else Vertex.from_graph(self, record._rid,
                                    self._generic_props_mapping(props, cache),
                                    self._element_cache(cache))
@@ -979,26 +983,26 @@ class Graph(object):
         return prop
 
     PROPERTY_TYPES = {
-        0:Boolean
-        , 1:Integer
-        , 2:Short
-        , 3:Long
-        , 4:Float
-        , 5:Double
-        , 6:DateTime
-        , 7:String
-        , 8:Binary
-        , 9:Embedded
-        , 10:EmbeddedList
-        , 11:EmbeddedSet
-        , 12:EmbeddedMap
-        , 13:Link
-        , 14:LinkList
-        , 15:LinkSet
-        , 16:LinkMap
-        , 17:Byte
-        , 19:Date
-        , 21:Decimal
+        0: Boolean
+        , 1: Integer
+        , 2: Short
+        , 3: Long
+        , 4: Float
+        , 5: Double
+        , 6: DateTime
+        , 7: String
+        , 8: Binary
+        , 9: Embedded
+        , 10: EmbeddedList
+        , 11: EmbeddedSet
+        , 12: EmbeddedMap
+        , 13: Link
+        , 14: LinkList
+        , 15: LinkSet
+        , 16: LinkMap
+        , 17: Byte
+        , 19: Date
+        , 21: Decimal
     }
 
     @classmethod
@@ -1008,8 +1012,8 @@ class Graph(object):
         property_params = {
             'nullable': not prop_def['notNull'],
             'default': prop_def.get('defaultValue', None),
-            'indexed': False, # FIXME
-            'unique': False, # FIXME
+            'indexed': False,  # FIXME
+            'unique': False,  # FIXME
             'mandatory': prop_def['mandatory'],
             'readonly': prop_def['readonly']
         }
@@ -1018,7 +1022,6 @@ class Graph(object):
             property_params['linked_to'] = linked_class
 
         return prop_type(**property_params)
-
 
     @staticmethod
     def valid_element_base(cls):

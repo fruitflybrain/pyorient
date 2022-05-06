@@ -3,15 +3,15 @@ import re
 
 from pyorient.serializations import OrientSerialization
 
-try:
-    from urllib.parse import urlparse, urlunparse
-except ImportError:
-    from urlparse import urlparse, urlunparse
+
+from urllib.parse import urlparse, urlunparse
+
 
 class Config(object):
     """Specifies how to connect to OrientDB server."""
-    def __init__(self, host, port, user, cred, db_name=None, storage='memory'
-                 , initial_drop=False, serialization_type=OrientSerialization.CSV, serialize_props=None):
+    def __init__(self, host, port, user, cred, db_name=None, storage='memory',
+                 initial_drop=False, serialization_type=OrientSerialization.CSV,
+                 serialize_props=None):
         """
         :param initial_drop: Useful for testing; signal that any existing
         database with this configuration should be dropped on connect.
@@ -41,12 +41,12 @@ class Config(object):
 
         if url_parts.path:
             db_name = os.path.basename(url_parts.path)
-            return cls(url_parts.hostname, url_parts.port, user, cred, db_name
-                       , url_parts.scheme, initial_drop, serialization_type)
+            return cls(url_parts.hostname, url_parts.port, user, cred, db_name,
+                       url_parts.scheme, initial_drop, serialization_type)
         else:
             db_name = url_parts.netloc
-            return cls(None, url_parts.port, user, cred, db_name
-                       , url_parts.scheme, initial_drop, serialization_type)
+            return cls(None, url_parts.port, user, cred, db_name,
+                       url_parts.scheme, initial_drop, serialization_type)
 
     def set_database(self, db_name, storage):
         self.db_name = db_name

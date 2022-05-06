@@ -3,7 +3,7 @@ set -e
 
 PARENT_DIR=$(dirname $(cd "$(dirname "$0")"; pwd))
 CI_DIR="$PARENT_DIR/ci/environment"
-DEFAULT_ORIENT_VERSION="2.2.33"
+DEFAULT_ORIENT_VERSION="3.2.0"
 
 # launch simple instance in debug mode with shell hang up
 while [ $# -ne 0 ]; do
@@ -32,12 +32,21 @@ ODB_LAUNCHER_SYML="${CI_DIR}/orientdb_current/bin/server.sh"
 
 echo "=== Initializing CI environment ==="
 
-if [ -d "/usr/lib/jvm/java-8-oracle/jre" ]; then
-    # Force maven on Travis to use JAVA 8
-    export JAVA_HOME="/usr/lib/jvm/java-8-oracle/jre"
-fi
+# show current JAVA_HOME and java version
+echo "Current JAVA_HOME: $JAVA_HOME"
+echo "Current java -version:"
+java -version
 
-echo `java -version`
+## install Java 8
+#sudo add-apt-repository -y ppa:openjdk-r/ppa
+#sudo apt-get -qq update
+#sudo apt-get install -y openjdk-8-jdk --no-install-recommends
+#sudo update-java-alternatives -s java-1.8.0-openjdk-amd64
+#
+## change JAVA_HOME to Java 8
+#export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+#
+#echo `java -version`
 echo `javac -version`
 echo `mvn -version`
 
@@ -62,11 +71,16 @@ if [ ! -d "$ODB_DIR/bin" ]; then
     cp ${PARENT_DIR}/ci/orientdb-server-config_2.0.xml "${ODB_DIR}/config/orientdb-server-config.xml"
   elif [[ "${ODB_VERSION}" != *"2.0"* ]]; then
     cp ${PARENT_DIR}/ci/orientdb-server-config.xml "${ODB_DIR}/config/orientdb-server-config.xml"
+  elif [[ "${ODB_VERSION}" != *"3.2"* ]]; then
+    cp ${PARENT_DIR}/ci/orientdb-server-config_3.2.xml "${ODB_DIR}/config/orientdb-server-config.xml"
   else
-    cp ${PARENT_DIR}/ci/orientdb-server-config_2.0.xml "${ODB_DIR}/config/orientdb-server-config.xml"
+    cp ${PARENT_DIR}/ci/orientdb-server-config_3.2.xml "${ODB_DIR}/config/orientdb-server-config.xml"
   fi
 
   cp ${PARENT_DIR}/ci/orientdb-server-log.properties "${ODB_DIR}/config/"
+
+  echo "cp ${PARENT_DIR}/ci/security.json \"${ODB_DIR}/config/\""
+  cp ${PARENT_DIR}/ci/security.json ${ODB_DIR}/config/
 
   if [ ! -d "${ODB_DIR}/databases" ]; then
     mkdir ${ODB_DIR}/databases
@@ -77,11 +91,11 @@ else
 fi
 
 echo "Installing databases: "
-echo "cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts \"${ODB_DIR}/databases/\""
-cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts "${ODB_DIR}/databases/"
+echo "cp -a ${PARENT_DIR}/ci/default_databases/GratefulDeadConcerts \"${ODB_DIR}/databases/\""
+cp -a ${PARENT_DIR}/ci/default_databases/GratefulDeadConcerts "${ODB_DIR}/databases/"
 
-echo "cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph \"${ODB_DIR}/databases/\""
-cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
+echo "cp -a ${PARENT_DIR}/ci/default_databases/VehicleHistoryGraph \"${ODB_DIR}/databases/\""
+cp -a ${PARENT_DIR}/ci/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
 
 # Configure link to the orientdb_current version
 rm -rf ${CI_DIR}/orientdb_current

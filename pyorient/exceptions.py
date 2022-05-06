@@ -1,23 +1,47 @@
-# @TODO extend a few more exception to be more descriptive
+"""PyOrient exceptions."""
+
+
 class PyOrientException(Exception):
     def __init__(self, message, errors):
 
-        _errorClass = message.split( "." )[-1]
+        _errorClass = message.split(".")[-1]
 
-        x = {
-            "OCommandSQLParsingException": PyOrientSQLParsingException,
-            "ODatabaseException": PyOrientDatabaseException,
-            "OConfigurationException": PyOrientDatabaseException,
+        exception_mapper = {
+            "OAccessToSBtreeCollectionManagerIsProhibitedException": PyOrientSecurityAccessException,
+            "OBackupInProgressException": PyOrientBackupInProgressException,
             "OCommandExecutorNotFoundException": PyOrientCommandException,
-            "OSecurityAccessException": PyOrientSecurityAccessException,
+            "OCommandExecutionException": PyOrientCommandException,
+            "OCommandScriptException": PyOrientCommandException,
+            "OCommandSQLParsingException": PyOrientSQLParsingException,
+            "OConfigurationException": PyOrientConfigurationException,
+            "ODatabaseException": PyOrientDatabaseException,
+            "ODurableComponentException": PyOrientDurableComponentException,
+            "OFetchException": PyOrientFetchException,
+            "OIndexEngineException": PyOrientIndexException,
+            "OIndexException": PyOrientIndexException,
+            "OLiveQueryInterruptedException": PyOrientLiveQueryInterruptedException,
+            "OModificationOperationProhibitedException": PyOrientModificationOperationProhibitedException,
+            "ONeedRetryException": PyOrientNeedRetryException,
+            "OOfflineClusterException": PyOrientOfflineClusterException,
             "ORecordDuplicatedException": PyOrientORecordDuplicatedException,
+            "ORecordNotFoundException": PyOrientRecordNotFoundException,
+            "ORetryQueryException": PyOrientNeedRetryException,
             "OSchemaException": PyOrientSchemaException,
-            "OIndexException": PyOrientIndexException
+            "OSecurityAccessException": PyOrientSecurityAccessException,
+            "OSecurityException": PyOrientSecurityException,
+            "OSequenceException": PyOrientSequenceException,
+            "OSerializationException": PyOrientSerializationException,
+            "OStorageException": PyOrientStorageException,
+            "OTooBigIndexKeyException": PyOrientTooBigIndexKeyException,
+            "OTokenSecurityException": PyOrientSecurityException,
+            "OTransactionException": PyOrientTransactionException,
+            "OValidationException": PyOrientValidationException,
+            "OWriteCacheException": PyOrientWriteCacheException,
         }
 
         # Override the exception Type with OrientDB exception map
-        if _errorClass in x.keys():
-            self.__class__ = x[ _errorClass ]
+        if _errorClass in exception_mapper.keys():
+            self.__class__ = exception_mapper[_errorClass]
 
         Exception.__init__(self, message)
         # errors is an array of tuple made this way:
@@ -27,8 +51,77 @@ class PyOrientException(Exception):
     def __str__(self):
         if self.errors:
             return "%s - %s" % (Exception.__str__(self), self.errors[0])
+
         else:
             return Exception.__str__(self)
+
+
+class PyOrientWriteCacheException(PyOrientException):
+    pass
+
+
+class PyOrientValidationException(PyOrientException):
+    pass
+
+
+class PyOrientTransactionException(PyOrientException):
+    pass
+
+
+class PyOrientTooBigIndexKeyException(PyOrientException):
+    pass
+
+
+class PyOrientStorageException(PyOrientException):
+    pass
+
+
+class PyOrientSerializationException(PyOrientException):
+    pass
+
+
+class PyOrientSequenceException(PyOrientException):
+    pass
+
+
+class PyOrientSecurityException(PyOrientException):
+    pass
+
+
+class PyOrientRecordNotFoundException(PyOrientException):
+    pass
+
+
+class PyOrientNeedRetryException(PyOrientException):
+    pass
+
+
+class PyOrientOfflineClusterException(PyOrientException):
+    pass
+
+
+class PyOrientModificationOperationProhibitedException(PyOrientException):
+    pass
+
+
+class PyOrientLiveQueryInterruptedException(PyOrientException):
+    pass
+
+
+class PyOrientFetchException(PyOrientException):
+    pass
+
+
+class PyOrientDurableComponentException(PyOrientException):
+    pass
+
+
+class PyOrientBackupInProgressException(PyOrientException):
+    pass
+
+
+class PyOrientConfigurationException(PyOrientException):
+    pass
 
 
 class PyOrientConnectionException(PyOrientException):
@@ -54,11 +147,14 @@ class PyOrientSQLParsingException(PyOrientException):
 class PyOrientCommandException(PyOrientException):
     pass
 
+
 class PyOrientSchemaException(PyOrientException):
     pass
 
+
 class PyOrientIndexException(PyOrientException):
     pass
+
 
 class PyOrientORecordDuplicatedException(PyOrientException):
     pass

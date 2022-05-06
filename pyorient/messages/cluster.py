@@ -4,7 +4,7 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.exceptions import PyOrientBadMethodCallException
 
-from .base import BaseMessage
+from .database import BaseMessage
 from ..constants import CLUSTER_TYPE_PHYSICAL, DATA_CLUSTER_ADD_OP, \
     DATA_CLUSTER_COUNT_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_LONG, FIELD_SHORT, \
     FIELD_STRING, DATA_CLUSTER_DATA_RANGE_OP, DATA_CLUSTER_DROP_OP, CLUSTER_TYPES
@@ -24,17 +24,17 @@ from ..utils import need_db_opened
 #
 class DataClusterAddMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( DataClusterAddMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DataClusterAddMessage, self).__init__(_orient_socket)
 
-        self._cluster_name     = ''
-        self._cluster_type     = CLUSTER_TYPE_PHYSICAL
+        self._cluster_name = ''
+        self._cluster_type = CLUSTER_TYPE_PHYSICAL
         self._cluster_location = 'default'
         self._datasegment_name = 'default'
-        self._new_cluster_id   = -1
+        self._new_cluster_id = -1
 
         # order matters
-        self._append( ( FIELD_BYTE, DATA_CLUSTER_ADD_OP ) )
+        self._append((FIELD_BYTE, DATA_CLUSTER_ADD_OP))
 
     @need_db_opened
     def prepare(self, params=None):
@@ -44,11 +44,11 @@ class DataClusterAddMessage(BaseMessage):
             self._cluster_name = params[0]
 
             # mandatory if not passed by method
-            self.set_cluster_type( params[1] )
+            self.set_cluster_type(params[1])
             self._cluster_location = params[2]
             self._datasegment_name = params[3]
 
-        except( IndexError, TypeError ):
+        except(IndexError, TypeError):
             # Use default for non existent indexes
             pass
         except ValueError:
@@ -57,21 +57,21 @@ class DataClusterAddMessage(BaseMessage):
             )
 
         if self.get_protocol() < 24:
-            self._append( ( FIELD_STRING, self._cluster_type ) )
-            self._append( ( FIELD_STRING, self._cluster_name ) )
-            self._append( ( FIELD_STRING, self._cluster_location ) )
-            self._append( ( FIELD_STRING, self._datasegment_name ) )
+            self._append((FIELD_STRING, self._cluster_type))
+            self._append((FIELD_STRING, self._cluster_name))
+            self._append((FIELD_STRING, self._cluster_location))
+            self._append((FIELD_STRING, self._datasegment_name))
         else:
-            self._append( ( FIELD_STRING, self._cluster_name ) )
+            self._append((FIELD_STRING, self._cluster_name))
 
         if self.get_protocol() >= 18:
-            self._append( ( FIELD_SHORT, self._new_cluster_id ) )
+            self._append((FIELD_SHORT, self._new_cluster_id))
 
-        return super( DataClusterAddMessage, self ).prepare()
+        return super(DataClusterAddMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_SHORT )
-        return super( DataClusterAddMessage, self ).fetch_response()[0]
+        self._append(FIELD_SHORT)
+        return super(DataClusterAddMessage, self).fetch_response()[0]
 
     def set_cluster_name(self, _cluster_name):
         self._cluster_name = _cluster_name
@@ -99,6 +99,7 @@ class DataClusterAddMessage(BaseMessage):
         self._new_cluster_id = _new_cluster_id
         return self
 
+
 #
 # DATA CLUSTER COUNT
 #
@@ -117,23 +118,23 @@ class DataClusterAddMessage(BaseMessage):
 #
 class DataClusterCountMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( DataClusterCountMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DataClusterCountMessage, self).__init__(_orient_socket)
 
         self._cluster_ids = []
         self._count_tombstones = 0
 
         # order matters
-        self._append( ( FIELD_BYTE, DATA_CLUSTER_COUNT_OP ) )
+        self._append((FIELD_BYTE, DATA_CLUSTER_COUNT_OP))
 
     @need_db_opened
     def prepare(self, params=None):
 
-        if isinstance( params, tuple ) or isinstance( params, list ):
+        if isinstance(params, tuple) or isinstance(params, list):
             try:
                 # mandatory if not passed by method
                 # raise Exception if None
-                if isinstance( params[0], tuple ) or isinstance( params[0], list ):
+                if isinstance(params[0], tuple) or isinstance(params[0], list):
                     self._cluster_ids = params[0]
                 else:
                     raise PyOrientBadMethodCallException(
@@ -141,21 +142,21 @@ class DataClusterCountMessage(BaseMessage):
                     )
 
                 self._count_tombstones = params[1]
-            except( IndexError, TypeError ):
+            except(IndexError, TypeError):
                 # Use default for non existent indexes
                 pass
 
-        self._append( ( FIELD_SHORT, len(self._cluster_ids) ) )
+        self._append((FIELD_SHORT, len(self._cluster_ids)))
         for x in self._cluster_ids:
-            self._append( ( FIELD_SHORT, x ) )
+            self._append((FIELD_SHORT, x))
 
-        self._append( ( FIELD_BOOLEAN, self._count_tombstones ) )
+        self._append((FIELD_BOOLEAN, self._count_tombstones))
 
-        return super( DataClusterCountMessage, self ).prepare()
+        return super(DataClusterCountMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_LONG )
-        return super( DataClusterCountMessage, self ).fetch_response()[0]
+        self._append(FIELD_LONG)
+        return super(DataClusterCountMessage, self).fetch_response()[0]
 
     def set_cluster_ids(self, _cluster_ids):
         self._cluster_ids = _cluster_ids
@@ -176,33 +177,33 @@ class DataClusterCountMessage(BaseMessage):
 #
 class DataClusterDataRangeMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( DataClusterDataRangeMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DataClusterDataRangeMessage, self).__init__(_orient_socket)
 
         self._cluster_id = 0
         self._count_tombstones = 0
 
         # order matters
-        self._append( ( FIELD_BYTE, DATA_CLUSTER_DATA_RANGE_OP ) )
+        self._append((FIELD_BYTE, DATA_CLUSTER_DATA_RANGE_OP))
 
     @need_db_opened
     def prepare(self, params=None):
-
-        if isinstance( params, int ):
+        if isinstance(params, int):
             # mandatory if not passed by method
             self._cluster_id = params
 
-        self._append( ( FIELD_SHORT, self._cluster_id ) )
-        return super( DataClusterDataRangeMessage, self ).prepare()
+        self._append((FIELD_SHORT, self._cluster_id))
+        return super(DataClusterDataRangeMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_LONG )
-        self._append( FIELD_LONG )
-        return super( DataClusterDataRangeMessage, self ).fetch_response()
+        self._append(FIELD_LONG)
+        self._append(FIELD_LONG)
+        return super(DataClusterDataRangeMessage, self).fetch_response()
 
     def set_cluster_id(self, _cluster_id):
         self._cluster_id = _cluster_id
         return self
+
 
 #
 # DATA CLUSTER DROP
@@ -214,28 +215,27 @@ class DataClusterDataRangeMessage(BaseMessage):
 #
 class DataClusterDropMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( DataClusterDropMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DataClusterDropMessage, self).__init__(_orient_socket)
 
         self._cluster_id = 0
         self._count_tombstones = 0
 
         # order matters
-        self._append( ( FIELD_BYTE, DATA_CLUSTER_DROP_OP ) )
+        self._append((FIELD_BYTE, DATA_CLUSTER_DROP_OP))
 
     @need_db_opened
     def prepare(self, params=None):
-
-        if isinstance( params[0], int ):
+        if isinstance(params[0], int):
             # mandatory if not passed by method
             self._cluster_id = params[0]
 
-        self._append( ( FIELD_SHORT, self._cluster_id ) )
-        return super( DataClusterDropMessage, self ).prepare()
+        self._append((FIELD_SHORT, self._cluster_id))
+        return super(DataClusterDropMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_BOOLEAN )
-        return super( DataClusterDropMessage, self ).fetch_response()[0]
+        self._append(FIELD_BOOLEAN)
+        return super(DataClusterDropMessage, self).fetch_response()[0]
 
     def set_cluster_id(self, _cluster_id):
         self._cluster_id = _cluster_id

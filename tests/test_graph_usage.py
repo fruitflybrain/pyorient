@@ -23,7 +23,7 @@ class GraphUsageTestCase(unittest.TestCase):
         db_name = "animals"
         try:
             self.client.db_drop(db_name)
-        except pyorient.PyOrientCommandException as e:
+        except pyorient.PyOrientStorageException as e:
             print(e)
         finally:
             db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,

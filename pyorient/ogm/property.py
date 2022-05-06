@@ -7,7 +7,6 @@ from .what import (
     , PropertyWhat, AnyPropertyWhat
 )
 from .element import GraphElement
-from ..utils import STR_TYPES
 
 import json
 import datetime
@@ -18,11 +17,16 @@ import sys
 from copy import deepcopy
 
 class Property(PropertyWhat):
-    _num_instances = 0 # Basis for ordering property instances
+    _num_instances = 0  # Basis for ordering property instances
 
-    def __init__(self, name=None, nullable=True
-                 , default=None, indexed=False, unique=False
-                 , mandatory=False, readonly=False):
+    def __init__(self,
+                 name=None,
+                 nullable=True,
+                 default=None,
+                 indexed=False,
+                 unique=False,
+                 mandatory=False,
+                 readonly=False):
         """Create a database class property.
 
         :param name: Overrides name of class attribute used for property
@@ -95,6 +99,7 @@ class UUID:
     def __str__(self):
         return 'UUID()'
 
+
 class PropertyEncoder:
     PROHIBITED_NAME_CHARS = set(''.join([string.whitespace, '"\'']))
 
@@ -110,31 +115,37 @@ class PropertyEncoder:
         from pyorient.ogm.what import What
 
         if isinstance(value, decimal.Decimal):
-            return u'"' + str(value) + '"'
+            return u'"{:f}"'.format(value)
+
         elif isinstance(value, float):
             with decimal.localcontext() as ctx:
                 ctx.prec = 20  # floats are max 80-bits wide = 20 significant digits
                 return u'"{:f}"'.format(decimal.Decimal(value))
+
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
-            return u'"' + str(value) + '"'
-        elif isinstance(value, STR_TYPES):
+            return u'"{}"'.format(value)
+
+        elif isinstance(value, str):
             # it just so happens that JSON in ASCII mode has the same limitations
             # and escape sequences as what we need: \u00c5 vs \xc5 representation,
             # quote escaping etc.
             return json.dumps(value)
+
         elif value is None:
             return 'null'
-        elif isinstance(value, int) or (sys.version_info[0] < 3 and isinstance(value, long)):
+
+        elif isinstance(value, (int, float)):
             return str(value)
+
         elif isinstance(value, list) or isinstance(value, set):
-            return u'[' + u','.join([PropertyEncoder.encode_value(v, expressions) for v in value]) + u']'
+            return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v, expressions) for v in value]))
+
         elif isinstance(value, dict):
             contents = u','.join([
-                PropertyEncoder.encode_value(k, expressions) + ': ' +
-                PropertyEncoder.encode_value(v, expressions)
+                '{}: {}'.format(PropertyEncoder.encode_value(k, expressions), PropertyEncoder.encode_value(v, expressions))
                 for k, v in value.items()
             ])
-            return u'{' + contents + u'}'
+            return u'{{ {} }}'.format(contents)
         elif isinstance(value, GraphElement):
             return value._id
         elif isinstance(value, What):
@@ -143,44 +154,58 @@ class PropertyEncoder:
             # returning the same object will cause repr(value) to be used
             return value
 
+
 class Boolean(Property):
     pass
+
 
 class Integer(Property, ArithmeticMixin):
     pass
 
+
 class Short(Property, ArithmeticMixin):
     pass
+
 
 class Long(Property, ArithmeticMixin):
     pass
 
+
 class Float(Property, ArithmeticMixin):
     pass
+
 
 class Double(Property, ArithmeticMixin):
     pass
 
+
 class DateTime(Property):
     pass
+
 
 class String(Property, StringMethodMixin):
     pass
 
+
 class Binary(Property):
     pass
+
 
 class Byte(Property):
     pass
 
+
 class Date(Property):
     pass
+
 
 class Decimal(Property, ArithmeticMixin):
     pass
 
+
 class Embedded(Property):
     pass
+
 
 class LinkedClassProperty(Property):
     def __init__(self, linked_to=None, name=None, default=None,
@@ -194,28 +219,36 @@ class LinkedClassProperty(Property):
             name, nullable, default, indexed, unique, mandatory, readonly)
         self._linked_to = linked_to
 
+
 class Link(LinkedClassProperty):
     pass
+
 
 class LinkList(LinkedClassProperty, CollectionMethodMixin):
     pass
 
+
 class LinkSet(LinkedClassProperty, CollectionMethodMixin):
     pass
 
+
 class LinkMap(LinkedClassProperty, MapMethodMixin):
     pass
+
 
 class LinkedProperty(LinkedClassProperty):
     """A LinkedProperty, unlike a LinkedClassProperty, can also link to
     primitive types"""
     pass
 
+
 class EmbeddedList(LinkedProperty, CollectionMethodMixin):
     pass
 
+
 class EmbeddedSet(LinkedProperty, CollectionMethodMixin):
     pass
+
 
 class EmbeddedMap(LinkedProperty, MapMethodMixin):
     pass

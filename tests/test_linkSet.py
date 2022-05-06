@@ -16,7 +16,7 @@ class LinkSetTestCase(unittest.TestCase):
         db_name = "test_set"
         try:
             self.client.db_drop(db_name)
-        except pyorient.PyOrientCommandException as e:
+        except pyorient.PyOrientStorageException as e:
             print(e)
         finally:
             db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
@@ -66,17 +66,17 @@ class LinkSetTestCase(unittest.TestCase):
             # can no more cheeck on the fixed clustedID, so the "only thing"(?) i can assert is not empty rid
             # because i think this should not test the database but the driver
             import re
-            assert re.match('#[-]*[0-9]+:[0-9]+', link.get_hash() ), (
-                "Failed to assert that "
-                "'#[-]*[0-9]+:[0-9]+' matches received "
-                "value: '%s'" % link.get_hash()
+            assert re.match('#[-]*[0-9]+:[0-9]+', link.get_hash()), (
+                    "Failed to assert that "
+                    "'#[-]*[0-9]+:[0-9]+' matches received "
+                    "value: '%s'" % link.get_hash()
             )
 
     def test_oUser(self):
         res = self.client.query("select from oUser")
         assert len(res) == 3
         for user in res:
-            assert user.oRecordData['roles'][0].clusterID == '4'
+            assert user.oRecordData['roles'][0].clusterID == '5'
 
     def testEmbed(self):
 
@@ -130,9 +130,9 @@ class LinkSetTestCase(unittest.TestCase):
                                         )[0].oRecordData
 
         assert 'mapInList' in class_id1
-        assert len(class_id1[ 'mapInList' ]) == 1
-        assert class_id1[ 'mapInList' ][0]['one'] == 2
-        assert class_id1[ 'mapInList' ][0]['three'] == 4
+        assert len(class_id1['mapInList']) == 1
+        assert class_id1['mapInList'][0]['one'] == 2
+        assert class_id1['mapInList'][0]['three'] == 4
 
     def testEmptyEmbeddedMapsInList(self):
         # self.skipTest('Bug')
@@ -142,36 +142,40 @@ class LinkSetTestCase(unittest.TestCase):
                                         )[0].oRecordData
 
     def testLinkList(self):
-
         DB = pyorient.OrientDB("localhost", 2424)
         DB.connect("root", "root")
 
         db_name = "test_tr"
         try:
             DB.db_drop(db_name)
-        except pyorient.PyOrientCommandException as e:
+
+        except pyorient.PyOrientStorageException as e:
             print(e)
-            pass
+
         finally:
-            db = DB.db_create(db_name, pyorient.DB_TYPE_GRAPH,
-                                       pyorient.STORAGE_TYPE_MEMORY)
-            pass
+            DB.db_create(db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
 
-        DB.command( "insert into V set key1 = 'row0'" )
-        DB.command( "insert into V set key1 = 'row1'" )
-        DB.command( "insert into V set key1 = 'row2'" )
-        DB.command( "insert into V set key1 = 'row3'" )
+        DB.command("insert into V set key1 = 'row0'")
+        DB.command("insert into V set key1 = 'row1'")
+        DB.command("insert into V set key1 = 'row2'")
+        DB.command("insert into V set key1 = 'row3'")
 
-        o1 = pyorient.OrientRecordLink( "9:0" )
-        o2 = pyorient.OrientRecordLink( "9:1" )
-        o3 = pyorient.OrientRecordLink( "9:2" )
-        o4 = pyorient.OrientRecordLink( "9:3" )
-        lList = [ o1, o2, o3, o4 ]
+        # V is cluster 9 in OrientDB 2.2, in ODB 3.1+ it is cluster 10
+        o1 = pyorient.OrientRecordLink("10:0")
+        o2 = pyorient.OrientRecordLink("10:1")
+        o3 = pyorient.OrientRecordLink("10:2")
+        o4 = pyorient.OrientRecordLink("10:3")
+        lList = [o1, o2, o3, o4]
 
-        rec = DB.record_create( 9, { 'test': lList, 'key1': 'row4' } )  # 9:4
+        tx = DB.tx_commit()
+        tx.begin()
 
-        if self.client.version.major > 1:
-            _rec = DB.record_load( rec._rid )
-            assert len( _rec.oRecordData['test'] ) == 4
-            assert isinstance( _rec.oRecordData['test'][0], pyorient.OrientRecordLink )
+        rec = DB.record_create(-1, {"@V": {'test': lList, 'key1': 'row4'}})  # 10:4
 
+        tx.attach(rec)
+        tx.commit()
+
+        # Removed major version check
+        _rec = DB.record_load(rec._record_content._rid)
+        assert len(_rec.oRecordData['test']) == 4
+        assert isinstance(_rec.oRecordData['test'][0], pyorient.OrientRecordLink)

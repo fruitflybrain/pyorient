@@ -1,15 +1,8 @@
-sudo: false
 language: python
+dist: xenial
+os: linux
 python:
-- '2.7'
-- '3.5'
-
-sudo: false
-addons:
-  apt:
-    packages:
-      - oracle-java8-installer
-      - oracle-java8-set-default
+- '3.8'
 
 install:
 - pip install coveralls
@@ -38,22 +31,21 @@ after_success:
   - coveralls
   - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "develop" && ./docs/publish.sh
 
-deploy:
-  provider: pypi
-  user: mogui
-  password:
-    secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
-  on:
-    tags: true
-    all_branches: true
+#deploy:
+#  provider: pypi
+#  user: mogui
+#  password:
+#    secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
+#  on:
+#    tags: true
+#    all_branches: true
 
 branches:
   except:
     - gh-pages
 
 env:
-  matrix:
-    - ORIENTDB_VERSION=2.2.19
-    - ORIENTDB_VERSION=2.2.9
+  jobs:
+    - ORIENTDB_VERSION=3.2.0
   global:
     - secure: "FfqHFu2i1X5dIqzIxIGraEZrGSswSE4XVR7Ig9fkfYhbQfhFfZCOaRG95tyoZW7g5S0K2Kiw/oDyIKMPC+5g5PfMv2uvI/LZtokOy5ZewF0SHMjuCA54P+y83uindQMfb6KvPc9h/6tV2eogQGZ1y+juXteb4NRDUxt27NppRwM="

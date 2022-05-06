@@ -1,6 +1,7 @@
 #!/bin/env python3.4
 # -*- coding: utf-8 -*-
 __author__ = 'Ostico <ostico@gmail.com>'
+
 import unittest
 import os
 
@@ -65,12 +66,12 @@ class CommandTestCase(unittest.TestCase):
         # print ( "%r" % x.holiday )
         # print ( "%r" % x._version )
 
-        assert result[0].oRecordData['rid'].get() == '11:0'
+        assert result[0].oRecordData['rid'].get() == '21:0'
         assert result[0].rid.get_hash() == rec_position1._rid
         assert result[0].holiday == rec1['@my_v_class']['holiday']
         assert result[0].version != 0
 
-        assert result[1].rid.get() == '11:1'
+        assert result[1].rid.get() == '21:1'
         assert result[1].rid.get_hash() == rec_position2._rid
         assert result[1].rid.get_hash() == rec_position2._rid
         assert result[1].holiday == rec2['@my_v_class']['holiday']
@@ -84,23 +85,25 @@ class CommandTestCase(unittest.TestCase):
 
         x = self.client.command("select rid, @rid, model, ciao from V")
         import re
-        assert re.match( '#[-]*[0-9]+:[0-9]+', x[0]._rid ), (
-            "Failed to assert that "
-            "'#[-]*[0-9]+:[0-9]+' matches received "
-            "value: '%s'" % x[0]._rid
+        assert re.match('#[-]*[0-9]+:[0-9]+', x[0]._rid), (
+                "Failed to assert that "
+                "'#[-]*[0-9]+:[0-9]+' matches received "
+                "value: '%s'" % x[0]._rid
         )
-        print( x[0]._rid )
+        print(x[0]._rid)
 
         assert x[0].rid == 'test_rid'
+
         try:
             x[0]._rid.get_hash()
             assert False
+
         except AttributeError:
             assert True
 
-        assert x[0].rid2.get_hash() == '#9:0', ("Failed to assert that "
+        assert x[0].rid2.get_hash() == '#10:0', ("Failed to assert that "
                                                 "'#9:0' equals received "
-                                                "value: '%s'" % x[0]._rid2)
+                                                "value: '%s'" % x[0].rid2)
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
 
@@ -110,7 +113,7 @@ class CommandTestCase(unittest.TestCase):
         assert x._rid == '#9:0'
         import re
         # this can differ from orientDB versions, so i use a regular expression
-        assert re.match( '[0-1]', str( x._version ) )
+        assert re.match('[0-1]', str(x._version))
         assert x._class == 'Package'
         assert x.name == 'foo'
         assert x.version == '1.0.0'
@@ -132,7 +135,7 @@ class CommandTestCase(unittest.TestCase):
         # print (cluster_id[0]._in)
         assert isinstance(edge_result[0]._in,
                           pyorient.OrientRecordLink)
-        assert edge_result[0]._in.get_hash() == "#9:0", \
+        assert edge_result[0]._in.get_hash() == "#10:0", \
             "in is not equal to '#9:0': %r" % edge_result[0]._in.get_hash()
 
         # print (cluster_id[0]._out)
@@ -144,13 +147,13 @@ class CommandTestCase(unittest.TestCase):
         cluster_id = self.client.command("create class response extends V")
         cluster_id = self.client.command("create class followed_by extends E")
 
-        cluster_id = self.client.batch( (
+        cluster_id = self.client.batch((
             "begin;"
             "let a = create vertex fb set name = 'd1';"
             "let b = create vertex response set name = 'a1';"
             "create edge followed_by from $a to $b;"
             "commit;"
-        ) )
+        ))
 
     def test_sql_batch_3(self):
 
@@ -161,6 +164,7 @@ class CommandTestCase(unittest.TestCase):
         cmd = (
             "begin;"
             "let a = create vertex fb set name = 'd1';"
+            "let b = create vertex response set name = 'r1';"
             "let c = select from fb limit 1;"
             "let d = select from response limit 1;"
             "let e = create edge from $c to $d;"
@@ -173,12 +177,9 @@ class CommandTestCase(unittest.TestCase):
         # in OrientDB newest than 2.1
         if self.client.version.major == 2 and \
                 self.client.version.minor >= 1:
-            with self.assertRaises( pyorient.PyOrientCommandException ):
+            with self.assertRaises(pyorient.PyOrientCommandException):
                 cluster_id = self.client.batch(cmd)
         else:
             cluster_id = self.client.batch(cmd)
-
-
-
 
 # x = CommandTestCase('test_sql_batch_2').run()

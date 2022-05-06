@@ -9,10 +9,6 @@ try:
 except NameError:
     basestring = str
 
-if sys.version_info[0] < 3:
-    iteritems = lambda d: d.iteritems()
-else:
-    iteritems = lambda d: d.items()
 
 class OrientRecord(object):
     """
@@ -24,7 +20,7 @@ class OrientRecord(object):
     def __str__(self):
         rep = ""
         if self.__o_storage:
-            rep = str( self.__o_storage )
+            rep = str(self.__o_storage)
         if self.__o_class is not None:
             rep = "'@" + str(self.__o_class) + "':" + rep + ""
         if self.__version is not None:
@@ -35,10 +31,10 @@ class OrientRecord(object):
 
     @staticmethod
     def addslashes(string):
-        l = [ "\\", '"', "'", "\0", ]
+        l = ["\\", '"', "'", "\0", ]
         for i in l:
             if i in string:
-                string = string.replace( i, '\\' + i )
+                string = string.replace(i, '\\' + i)
         return string
 
     def __init__(self, content=None):
@@ -49,7 +45,7 @@ class OrientRecord(object):
 
         if not content:
             content = {}
-        for key, value in iteritems(content):
+        for key, value in content.items():
             if key == '__rid':  # Ex: select @rid, field from v_class
                 self.__rid = value
                 # self.__rid = OrientRecordLink( content[ key ][ 1: ] )
@@ -61,15 +57,19 @@ class OrientRecord(object):
                 # special case dict
                 # { '@my_class': { 'accommodation': 'hotel' } }
                 self.__o_class = key[1:]
-                for _key, _value in iteritems(value):
+                for _key, _value in content[key].items():
                     if isinstance(_value, basestring):
-                        self.__o_storage[_key] = self.addslashes( _value )
+                        self.__o_storage[_key] = self.addslashes(_value)
                     else:
                         self.__o_storage[_key] = _value
             elif key == '__o_storage':
                 self.__o_storage = value
             else:
                 self.__o_storage[key] = value
+
+    def _set_keys(self, content=dict):
+        for key, value in content.items():
+            self._set_keys(value)
 
     @property
     def _in(self):
@@ -105,6 +105,7 @@ class OrientRecord(object):
 
     """ This method is for backward compatibility when someone
         use 'getattr(record, a_key)' """
+
     def __getattr__(self, item):
         """
         :param item: string
@@ -114,8 +115,8 @@ class OrientRecord(object):
         try:
             return self.__o_storage[item]
         except KeyError:
-            raise AttributeError( "'OrientRecord' object has no attribute "
-                                  "'" + item + "'" )
+            raise AttributeError("'OrientRecord' object has no attribute "
+                                 "'" + item + "'")
 
     def __bool__(self):
         return True if self.__rid or len(self.__o_storage) else False
@@ -163,18 +164,16 @@ class OrientBinaryObject(object):
     """
     This will be a RidBag
     """
+
     def __init__(self, stri):
         self.b64 = stri
 
     def get_hash(self):
         return "_" + self.b64 + "_"
 
-    if sys.version_info[0] < 3:
-        def getBin(self):
-            return bytearray(base64.b64decode(self.b64))
-    else:
-        def getBin(self):
-            return base64.b64decode(self.b64)
+    def getBin(self):
+        return base64.b64decode(self.b64)
+
 
 class OrientCluster(object):
     def __init__(self, name, cluster_id, cluster_type=None, segment=None):
@@ -228,41 +227,41 @@ class OrientVersion(object):
 
         self._parse_version(release)
 
-    def _parse_version( self, string_release ):
+    def _parse_version(self, string_release):
 
         import re
         if not isinstance(string_release, str):
             string_release = string_release.decode()
 
         try:
-            version_info = string_release.split( "." )
+            version_info = string_release.split(".")
             self.major = version_info[0]
             self.minor = version_info[1]
             self.build = version_info[2]
         except IndexError:
             pass
 
-        regx = re.match('.*([0-9]+).*', self.major )
+        regx = re.match('.*([0-9]+).*', self.major)
         self.major = regx.group(1)
 
         try:
-            _temp = self.minor.split( "-" )
+            _temp = self.minor.split("-")
             self.minor = _temp[0]
             self.subversion = _temp[1]
         except IndexError:
             pass
 
         try:
-            regx = re.match( '([0-9]+)[\.\- ]*(.*)', self.build )
+            regx = re.match('([0-9]+)[\.\- ]*(.*)', self.build)
             self.build = regx.group(1)
             self.subversion = regx.group(2)
         except TypeError:
             pass
 
-        self.major = int( self.major )
-        self.minor = int( self.minor )
-        self.build = 0 if self.build is None else int( self.build )
-        self.subversion = '' if self.subversion is None else str( self.subversion )
+        self.major = int(self.major)
+        self.minor = int(self.minor)
+        self.build = 0 if self.build is None else int(self.build)
+        self.subversion = '' if self.subversion is None else str(self.subversion)
 
     def __str__(self):
         return self.release

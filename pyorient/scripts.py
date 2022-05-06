@@ -79,8 +79,7 @@ class Scripts(object):
         for k, v in args.items():
             if isinstance(v, str) or isinstance(v, datetime):
                 replacements[k] = "'{}'".format(v)
-            elif sys.version_info[0] < 3 and isinstance(v, unicode):
-                replacements[k] = repr(v.encode('utf-8'))
+
             else:
                 replacements[k] = '{}'.format(v)
 
@@ -92,12 +91,15 @@ class Scripts(object):
 
         return ''.join(split_body)
 
+
 class ParamDefault(tuple):
+
     def __new__(self, pair):
         l = len(pair)
+
         if l > 2:
-            raise ValueError('Only a name, and (optionally) a '
-                'default value is valid for a parameter.')
+            raise ValueError('Only a name, and (optionally) a default value is valid for a parameter.')
+
         return tuple.__new__(self, (pair[0].strip(),) +
-                                    ((pair[1],) if l > 1 else tuple()))
+                             ((pair[1],) if l > 1 else tuple()))
 

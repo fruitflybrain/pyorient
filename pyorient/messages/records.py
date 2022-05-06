@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Ostico <ostico@gmail.com>'
 
-from .base import BaseMessage
+from .database import BaseMessage
 from ..exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionException
 from ..otypes import OrientRecord
@@ -42,8 +42,8 @@ from ..utils import need_db_opened, parse_cluster_id, \
 #
 class RecordCreateMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( RecordCreateMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(RecordCreateMessage, self).__init__(_orient_socket)
 
         self._data_segment_id = -1  # default
         self._cluster_id = b'0'
@@ -52,38 +52,38 @@ class RecordCreateMessage(BaseMessage):
         self._mode_async = 0  # means synchronous mode
 
         # order matters
-        self._append( ( FIELD_BYTE, RECORD_CREATE_OP ) )
+        self._append((FIELD_BYTE, RECORD_CREATE_OP))
 
     @need_db_opened
     def prepare(self, params=None):
 
         try:
             # mandatory if not passed by method
-            self.set_cluster_id( params[0] )
+            self.set_cluster_id(params[0])
 
             # mandatory if not passed by method
             self._record_content = params[1]
 
-            self.set_record_type( params[2] )  # optional
+            self.set_record_type(params[2])  # optional
 
         except IndexError:
             # Use default for non existent indexes
             pass
 
         record = self._record_content
-        if not isinstance( record, OrientRecord ):
-            record = self._record_content = OrientRecord( record )
+        if not isinstance(record, OrientRecord):
+            record = self._record_content = OrientRecord(record)
 
         o_record_enc = self.get_serializer().encode(record)
         if self.get_protocol() < 24:
-            self._append( ( FIELD_INT, int(self._data_segment_id) ) )
+            self._append((FIELD_INT, int(self._data_segment_id)))
 
-        self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_STRING, o_record_enc ) )
-        self._append( ( FIELD_BYTE, self._record_type ) )
-        self._append( ( FIELD_BOOLEAN, self._mode_async ) )
+        self._append((FIELD_SHORT, int(self._cluster_id)))
+        self._append((FIELD_STRING, o_record_enc))
+        self._append((FIELD_BYTE, self._record_type))
+        self._append((FIELD_BOOLEAN, self._mode_async))
 
-        return super( RecordCreateMessage, self ).prepare()
+        return super(RecordCreateMessage, self).prepare()
 
     def fetch_response(self):
 
@@ -92,11 +92,11 @@ class RecordCreateMessage(BaseMessage):
             return self
 
         if self.get_protocol() > 25:
-            self._append( FIELD_SHORT )  # cluster-id
+            self._append(FIELD_SHORT)  # cluster-id
 
-        self._append( FIELD_LONG )  # cluster-position
-        self._append( FIELD_INT )  # record-version
-        result = super( RecordCreateMessage, self ).fetch_response()
+        self._append(FIELD_LONG)  # cluster-position
+        self._append(FIELD_INT)  # record-version
+        result = super(RecordCreateMessage, self).fetch_response()
 
         # There are some strange behaviours with protocols between 19 and 23
         # the INT ( count-of-collection-changes ) in documentation
@@ -109,23 +109,23 @@ class RecordCreateMessage(BaseMessage):
         _changes = []
         if self.get_protocol() > 21:
             try:
-                chng = self._decode_field( FIELD_INT )
+                chng = self._decode_field(FIELD_INT)
                 """ count-of-collection-changes """
-            except ( PyOrientConnectionException, TypeError ):
+            except (PyOrientConnectionException, TypeError):
                 pass
 
             try:
                 if chng > 0 and self.get_protocol() > 23:
 
-                    for x in range( 0, chng ):
+                    for x in range(0, chng):
                         change = [
-                            self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
-                            self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
-                            self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
-                            self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
-                            self._decode_field( FIELD_INT )    # (updated-page-offset:int)
+                            self._decode_field(FIELD_LONG),  # (uuid-most-sig-bits:long)
+                            self._decode_field(FIELD_LONG),  # (uuid-least-sig-bits:long)
+                            self._decode_field(FIELD_LONG),  # (updated-file-id:long)
+                            self._decode_field(FIELD_LONG),  # (updated-page-index:long)
+                            self._decode_field(FIELD_INT)  # (updated-page-offset:int)
                         ]
-                        _changes.append( change )
+                        _changes.append(change)
 
             except IndexError:
                 # Should not happen because of protocol check
@@ -157,7 +157,7 @@ class RecordCreateMessage(BaseMessage):
         self._record_content = record
         return self
 
-    def set_record_type(self, record_type ):
+    def set_record_type(self, record_type):
         if record_type in RECORD_TYPES:
             # user choice storage if present
             self._record_type = record_type
@@ -191,8 +191,8 @@ class RecordCreateMessage(BaseMessage):
 #
 class RecordDeleteMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( RecordDeleteMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(RecordDeleteMessage, self).__init__(_orient_socket)
 
         self._cluster_id = b'0'
         self._cluster_position = b'0'
@@ -203,30 +203,30 @@ class RecordDeleteMessage(BaseMessage):
         self._record_type = RECORD_TYPE_DOCUMENT
 
         # order matters
-        self._append( ( FIELD_BYTE, RECORD_DELETE_OP ) )
+        self._append((FIELD_BYTE, RECORD_DELETE_OP))
 
     @need_db_opened
     def prepare(self, params=None):
 
         try:
             # mandatory if not passed by method
-            self.set_cluster_id( params[0] )
+            self.set_cluster_id(params[0])
 
             # mandatory if not passed by method
-            self.set_cluster_position( params[1] )
+            self.set_cluster_position(params[1])
 
-            self._record_version = params[2]   # optional
+            self._record_version = params[2]  # optional
             self._mode_async = params[3]  # optional
         except IndexError:
             # Use default for non existent indexes
             pass
 
-        self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
-        self._append( ( FIELD_INT, int(self._record_version) ) )
-        self._append( ( FIELD_BOOLEAN, self._mode_async ) )
+        self._append((FIELD_SHORT, int(self._cluster_id)))
+        self._append((FIELD_LONG, int(self._cluster_position)))
+        self._append((FIELD_INT, int(self._record_version)))
+        self._append((FIELD_BOOLEAN, self._mode_async))
 
-        return super( RecordDeleteMessage, self ).prepare()
+        return super(RecordDeleteMessage, self).prepare()
 
     def fetch_response(self):
 
@@ -234,8 +234,8 @@ class RecordDeleteMessage(BaseMessage):
         if self._orientSocket.in_transaction is True:
             return self
 
-        self._append( FIELD_BOOLEAN )  # payload-status
-        return super( RecordDeleteMessage, self ).fetch_response()[0]
+        self._append(FIELD_BOOLEAN)  # payload-status
+        return super(RecordDeleteMessage, self).fetch_response()[0]
 
     def set_record_version(self, _record_version):
         self._record_version = _record_version
@@ -290,15 +290,15 @@ class RecordDeleteMessage(BaseMessage):
 #
 class RecordLoadMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( RecordLoadMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(RecordLoadMessage, self).__init__(_orient_socket)
 
         self._record_id = ''
         self._fetch_plan = '*:0'
         self.cached_records = []
 
         # order matters
-        self._append( ( FIELD_BYTE, RECORD_LOAD_OP ) )
+        self._append((FIELD_BYTE, RECORD_LOAD_OP))
 
     @need_db_opened
     def prepare(self, params=None):
@@ -309,48 +309,49 @@ class RecordLoadMessage(BaseMessage):
 
             # callback function use to operate
             # over the async fetched records
-            self.set_callback( params[2] )
+            self.set_callback(params[2])
+
         except IndexError:
             # Use default for non existent indexes
             pass
 
         try:
-            _cluster = parse_cluster_id( self._record_id )
-            _position = parse_cluster_position( self._record_id )
+            _cluster = parse_cluster_id(self._record_id)
+            _position = parse_cluster_position(self._record_id)
+
         except ValueError:
-            raise PyOrientBadMethodCallException( "Not valid Rid to load: "
-                                                  + self._record_id, [] )
+            raise PyOrientBadMethodCallException("Not valid Rid to load: " + self._record_id, [])
 
-        self._append( ( FIELD_SHORT, int(_cluster) ) )
-        self._append( ( FIELD_LONG, int(_position) ) )
-        self._append( ( FIELD_STRING, self._fetch_plan ) )
-        self._append( ( FIELD_BYTE, "0" ) )
-        self._append( ( FIELD_BYTE, "0" ) )
+        self._append((FIELD_SHORT, int(_cluster)))
+        self._append((FIELD_LONG, int(_position)))
+        self._append((FIELD_STRING, self._fetch_plan))
+        self._append((FIELD_BYTE, "0"))
+        self._append((FIELD_BYTE, "0"))
 
-        return super( RecordLoadMessage, self ).prepare()
+        return super(RecordLoadMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_BYTE )
-        _status = super( RecordLoadMessage, self ).fetch_response()[0]
+        self._append(FIELD_BYTE)
+        _status = super(RecordLoadMessage, self).fetch_response()[0]
 
         _record = OrientRecord()
         if _status != 0:
 
             if self.get_protocol() > 27:
-                self._append( FIELD_BYTE )   # record type
-                self._append( FIELD_INT )    # record version
-                self._append( FIELD_BYTES )  # record content
+                self._append(FIELD_BYTE)  # record type
+                self._append(FIELD_INT)  # record version
+                self._append(FIELD_BYTES)  # record content
                 rec_position = 2
             else:
-                self._append( FIELD_BYTES )  # record content
-                self._append( FIELD_INT )    # record version
-                self._append( FIELD_BYTE )   # record type
+                self._append(FIELD_BYTES)  # record content
+                self._append(FIELD_INT)  # record version
+                self._append(FIELD_BYTE)  # record type
                 rec_position = 0
 
-            __record = super( RecordLoadMessage, self ).fetch_response(True)
+            __record = super(RecordLoadMessage, self).fetch_response(True)
             # bug in orientdb csv serialization in snapshot 2.0,
             # strip trailing spaces
-            class_name, data = self.get_serializer().decode(__record[ rec_position ].rstrip() )
+            class_name, data = self.get_serializer().decode(__record[rec_position].rstrip())
             self._read_async_records()  # get cache
 
             _record = OrientRecord(
@@ -376,8 +377,8 @@ class RecordLoadMessage(BaseMessage):
         if hasattr(func, '__call__'):
             self._callback = func
         else:
-            raise PyOrientBadMethodCallException( func + " is not a callable "
-                                                         "function", [])
+            raise PyOrientBadMethodCallException(func + " is not a callable "
+                                                        "function", [])
         return self
 
 
@@ -419,8 +420,8 @@ class RecordLoadMessage(BaseMessage):
 #
 class RecordUpdateMessage(BaseMessage):
 
-    def __init__(self, _orient_socket ):
-        super( RecordUpdateMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(RecordUpdateMessage, self).__init__(_orient_socket)
 
         self._data_segment_id = -1  # default
         self._cluster_id = b'0'
@@ -446,24 +447,24 @@ class RecordUpdateMessage(BaseMessage):
         self._mode_async = 0  # means synchronous mode
 
         # order matters
-        self._append( ( FIELD_BYTE, RECORD_UPDATE_OP ) )
+        self._append((FIELD_BYTE, RECORD_UPDATE_OP))
 
     @need_db_opened
     def prepare(self, params=None):
 
         try:
             # mandatory if not passed by method
-            self.set_cluster_id( params[0] )
+            self.set_cluster_id(params[0])
 
             # mandatory if not passed by method
-            self.set_cluster_position( params[1] )
+            self.set_cluster_position(params[1])
 
             # mandatory if not passed by method
             self._record_content = params[2]
 
             self._record_version = params[3]  # Optional|Needed for transaction
 
-            self.set_record_type( params[4] )  # optional
+            self.set_record_type(params[4])  # optional
 
             self._record_version_policy = params[5]  # optional
             self._mode_async = params[6]  # optional
@@ -475,22 +476,22 @@ class RecordUpdateMessage(BaseMessage):
             pass
 
         record = self._record_content
-        if not isinstance( record, OrientRecord ):
-            record = self._record_content = OrientRecord( record )
+        if not isinstance(record, OrientRecord):
+            record = self._record_content = OrientRecord(record)
 
         o_record_enc = self.get_serializer().encode(record)
-        self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
+        self._append((FIELD_SHORT, int(self._cluster_id)))
+        self._append((FIELD_LONG, int(self._cluster_position)))
 
         if self.get_protocol() >= 23:
-            self._append( ( FIELD_BOOLEAN, self._update_content ) )
+            self._append((FIELD_BOOLEAN, self._update_content))
 
-        self._append( ( FIELD_STRING, o_record_enc ) )
-        self._append( ( FIELD_INT, int(self._record_version_policy) ) )
-        self._append( ( FIELD_BYTE, self._record_type ) )
-        self._append( ( FIELD_BOOLEAN, self._mode_async ) )
+        self._append((FIELD_STRING, o_record_enc))
+        self._append((FIELD_INT, int(self._record_version_policy)))
+        self._append((FIELD_BYTE, self._record_type))
+        self._append((FIELD_BOOLEAN, self._mode_async))
 
-        return super( RecordUpdateMessage, self ).prepare()
+        return super(RecordUpdateMessage, self).prepare()
 
     def fetch_response(self):
 
@@ -498,8 +499,8 @@ class RecordUpdateMessage(BaseMessage):
         if self._orientSocket.in_transaction is True:
             return self
 
-        self._append( FIELD_INT )  # record-version
-        result = super( RecordUpdateMessage, self ).fetch_response()
+        self._append(FIELD_INT)  # record-version
+        result = super(RecordUpdateMessage, self).fetch_response()
 
         # There are some strange behaviours with protocols between 19 and 23
         # the INT ( count-of-collection-changes ) in documentation
@@ -512,23 +513,23 @@ class RecordUpdateMessage(BaseMessage):
         _changes = []
         if self.get_protocol() > 21:
             try:
-                chng = self._decode_field( FIELD_INT )
+                chng = self._decode_field(FIELD_INT)
                 """ count-of-collection-changes """
-            except ( PyOrientConnectionException, TypeError ):
+            except (PyOrientConnectionException, TypeError):
                 pass
 
             try:
                 if chng > 0 and self.get_protocol() > 23:
 
-                    for x in range( 0, chng ):
+                    for x in range(0, chng):
                         change = [
-                            self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
-                            self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
-                            self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
-                            self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
-                            self._decode_field( FIELD_INT )    # (updated-page-offset:int)
+                            self._decode_field(FIELD_LONG),  # (uuid-most-sig-bits:long)
+                            self._decode_field(FIELD_LONG),  # (uuid-least-sig-bits:long)
+                            self._decode_field(FIELD_LONG),  # (updated-file-id:long)
+                            self._decode_field(FIELD_LONG),  # (updated-page-index:long)
+                            self._decode_field(FIELD_INT)  # (updated-page-offset:int)
                         ]
-                        _changes.append( change )
+                        _changes.append(change)
 
             except IndexError:
                 # append an empty field
@@ -538,7 +539,7 @@ class RecordUpdateMessage(BaseMessage):
             __version=result[0]
         )
 
-        return [ self._record_content, chng, _changes ]
+        return [self._record_content, chng, _changes]
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id
@@ -556,7 +557,7 @@ class RecordUpdateMessage(BaseMessage):
         self._record_content = record
         return self
 
-    def set_record_type(self, record_type ):
+    def set_record_type(self, record_type):
         if record_type in RECORD_TYPES:
             # user choice storage if present
             self._record_type = record_type

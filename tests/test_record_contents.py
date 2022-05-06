@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 __author__ = 'Ostico <ostico@gmail.com>'
+
 import unittest
 import os
 
@@ -9,26 +10,28 @@ os.environ['DEBUG_VERBOSE'] = "0"
 import pyorient
 
 
-class CommandTestCase( unittest.TestCase ):
-    def __init__( self, *args, **kwargs ):
-        super( CommandTestCase, self ).__init__( *args, **kwargs )
+class CommandTestCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(CommandTestCase, self).__init__(*args, **kwargs)
         self.client = None
         self.cluster_info = None
         self.class_id1 = None
 
-    def setUp( self ):
+    def setUp(self):
 
-        self.client = pyorient.OrientDB( "localhost", 2424 )
-        self.client.connect( "root", "root" )
+        self.client = pyorient.OrientDB("localhost", 2424)
+        self.client.connect("root", "root")
 
         db_name = "test_tr"
         try:
-            self.client.db_drop( db_name )
-        except pyorient.PyOrientCommandException as e:
-            print( e )
+            self.client.db_drop(db_name)
+
+        except pyorient.PyOrientStorageException as e:
+            print(e)
+
         finally:
-            db = self.client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
-                                        pyorient.STORAGE_TYPE_MEMORY )
+            db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
+                                       pyorient.STORAGE_TYPE_MEMORY)
             pass
 
         self.cluster_info = self.client.db_open(
@@ -36,39 +39,38 @@ class CommandTestCase( unittest.TestCase ):
         )
 
         self.class_id1 = \
-            self.client.command( "create class my_v_class extends V" )[0]
+            self.client.command("create class my_v_class extends V")[0]
 
-    def test_boolean( self ):
-        rec = self.client.command( 'create vertex v content {"abcdef":false,'
-                                   '"qwerty":TRUE}' )
+    def test_boolean(self):
+        rec = self.client.command('create vertex v content {"abcdef":false,'
+                                  '"qwerty":TRUE}')
         assert rec[0].abcdef is not True, "abcdef expected False: '%s'" % rec[
             0].abcdef
         assert rec[0].qwerty is True, "qwerty expected True: '%s'" % rec[
             0].qwerty
 
-        rec_value = self.client.query( 'select from v' )
+        rec_value = self.client.query('select from v')
         assert rec_value[0].abcdef is not True, "abcdef expected False: '%s'" % \
                                                 rec_value[0].abcdef
         assert rec_value[0].qwerty is True, "qwerty expected True: '%s'" % \
                                             rec_value[0].qwerty
 
-    def test_record_create_nonstrings( self ):
+    def test_record_create_nonstrings(self):
         # this should succeed with no exception
-        self.client.record_create (self.class_id1, {'@my_v_class': {'a': 1.5, 'b': 'foo'}} )
+        self.client.record_create(self.class_id1, {'@my_v_class': {'a': 1.5, 'b': 'foo'}})
 
-    def test_record_create_embedded_list( self ):
+    def test_record_create_embedded_list(self):
         # this should succeed with no exception
-        self.client.record_create(self.class_id1, {'@my_v_class': {'a': ['bar', 'bar']}} )
+        self.client.record_create(self.class_id1, {'@my_v_class': {'a': ['bar', 'bar']}})
 
-    def test_record_create_embedded_dictionary( self ):
+    def test_record_create_embedded_dictionary(self):
         # this should succeed with no exception
-        self.client.record_create(self.class_id1, {'@my_v_class': {'a': [{'bar': 'bar'}]}} )
+        self.client.record_create(self.class_id1, {'@my_v_class': {'a': [{'bar': 'bar'}]}})
 
-    def test_new_orient_dict( self ):
-        import re
+    def test_new_orient_dict(self):
 
-        rec = self.client.command( 'create vertex v content {"a":false,'
-                                   '"q":TRUE}' )
+        rec = self.client.command('create vertex v content {"a":false,'
+                                  '"q":TRUE}')
 
         self.assertIn('a', rec[0])
         self.assertIn('q', rec[0])
@@ -76,25 +78,25 @@ class CommandTestCase( unittest.TestCase ):
         assert rec[0].q is True
         import re
         # this can differ from orientDB versions, so i use a regular expression
-        assert re.match( '[0-1]', str( rec[0]._version ) )
-        assert rec[0]._rid == '#9:0'
+        assert re.match('[0-1]', str(rec[0]._version))
+        assert rec[0]._rid == '#10:0'
 
         rec = {'a': 1, 'b': 2, 'c': 3}
-        rec_position = self.client.record_create( 3, rec )
+        rec_position = self.client.record_create(3, rec)
 
         assert rec_position.a == 1
         assert rec_position.b == 2
         assert rec_position.c == 3
         # this can differ from orientDB versions, so i use a regular expression
-        assert re.match( '[0-1]', str( rec_position._version ) )
+        assert re.match('[0-1]', str(rec_position._version))
         assert rec_position._rid == '#3:0'
 
-        res = self.client.query( "select from " + rec_position._rid )
+        res = self.client.query("select from " + rec_position._rid)
         assert res[0].a == 1
         assert res[0].b == 2
         assert res[0].c == 3
         # this can differ from orientDB versions, so i use a regular expression
-        assert re.match( '[0-1]', str( res[0]._version ) )
+        assert re.match('[0-1]', str(res[0]._version))
         assert res[0]._rid == '#3:0'
 
         hashed_records = {rec_position: 1, res[0]: 2}
@@ -117,7 +119,7 @@ class CommandTestCase( unittest.TestCase ):
         # print(res[0])
         # print(res[0].oRecordData['b'])
         assert res[0].oRecordData['b'] == {}, "Failed to asert that received " + \
-                                         res[0].oRecordData['b'] + " equals '{}"
+                                              res[0].oRecordData['b'] + " equals '{}"
 
         res = self.client.command('create vertex v content {"a":1,"b":{}}')
         # print(res[0])
@@ -314,13 +316,13 @@ class CommandTestCase( unittest.TestCase ):
         record = self.client.command("CREATE VERTEX V CONTENT " +
                                      json.dumps(test_data))[0]
 
-        assert record._rid == '#9:0'
+        assert record._rid == '#10:0'
         assert record.oRecordData['scenario'] == 'a "quote" follows'
 
     def test_db_list(self):
-        self.client.connect( "root", "root" )
+        self.client.connect("root", "root")
         databases = self.client.db_list()
-        assert databases.oRecordData[ 'databases' ][ 'GratefulDeadConcerts' ]
+        assert databases.oRecordData['databases']['GratefulDeadConcerts']
 
     def test_datetime(self):
         x = self.client.query(
@@ -331,8 +333,8 @@ class CommandTestCase( unittest.TestCase ):
 
         import datetime
         assert 'DATE' in x
-        assert isinstance( x['DATE'], datetime.datetime )
-        assert str( x['DATE'] ) == '2015-01-02 03:04:05'
+        assert isinstance(x['DATE'], datetime.datetime)
+        assert str(x['DATE']) == '2015-01-02 03:04:05'
 
     def test_deserialize_numeric_types(self):
 
@@ -359,12 +361,6 @@ class CommandTestCase( unittest.TestCase ):
         assert isinstance(lon5, float), \
             "type(lon5) is not equal to 'float': %r" % type(lon5)
 
-        import sys
-        if sys.version_info[0] < 3:
-            assert isinstance(lon3, long), \
-                "type(lon3) is not equal to 'long': %r" \
-                % type(lon3)  # python 2.x long type
-        else:
-            assert isinstance(lon3, int), \
-                "type(lon3) is not equal to 'int': %r" \
-                % type(lon3)
+        assert isinstance(lon3, int), \
+            "type(lon3) is not equal to 'int': %r" \
+            % type(lon3)

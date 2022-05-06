@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from .base import BaseMessage
+from .database import BaseMessage
 from .records import RecordUpdateMessage, RecordDeleteMessage, RecordCreateMessage
 from ..exceptions import PyOrientBadMethodCallException
 from ..constants import COMMAND_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_CHAR, \
@@ -7,7 +7,6 @@ from ..constants import COMMAND_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_CHAR, \
     TX_COMMIT_OP, QUERY_GREMLIN, QUERY_ASYNC, QUERY_CMD, QUERY_TYPES, \
     QUERY_SCRIPT
 from ..utils import need_connected, need_db_opened, dlog
-
 
 __author__ = 'Ostico <ostico@gmail.com>'
 
@@ -63,7 +62,7 @@ __author__ = 'Ostico <ostico@gmail.com>'
 class CommandMessage(BaseMessage):
 
     def __init__(self, _orient_socket):
-        super( CommandMessage, self ).__init__(_orient_socket)
+        super(CommandMessage, self).__init__(_orient_socket)
 
         self._query = ''
         self._limit = 20
@@ -71,7 +70,7 @@ class CommandMessage(BaseMessage):
         self._command_type = QUERY_SYNC
         self._mod_byte = 's'
 
-        self._append( ( FIELD_BYTE, COMMAND_OP ) )
+        self._append((FIELD_BYTE, COMMAND_OP))
 
     @need_db_opened
     def prepare(self, params=None ):
@@ -96,12 +95,12 @@ class CommandMessage(BaseMessage):
             self._mod_byte = 's'
         else:
             if self._callback is None:
-                raise PyOrientBadMethodCallException( "No callback was provided.", [])
+                raise PyOrientBadMethodCallException("No callback was provided.", [])
             self._mod_byte = 'a'
 
         _payload_definition = [
-            ( FIELD_STRING, self._command_type ),
-            ( FIELD_STRING, self._query )
+            (FIELD_STRING, self._command_type),
+            (FIELD_STRING, self._query)
         ]
 
         if self._command_type == QUERY_ASYNC \
@@ -111,25 +110,25 @@ class CommandMessage(BaseMessage):
             # a limit specified in a sql string should always override a
             # limit parameter pass to prepare()
             if ' LIMIT ' not in self._query.upper() or self._command_type == QUERY_GREMLIN:
-                _payload_definition.append( ( FIELD_INT, self._limit ) )
+                _payload_definition.append((FIELD_INT, self._limit))
             else:
-                _payload_definition.append( ( FIELD_INT, -1 ) )
+                _payload_definition.append((FIELD_INT, -1))
 
-            _payload_definition.append( ( FIELD_STRING, self._fetch_plan ) )
+            _payload_definition.append((FIELD_STRING, self._fetch_plan))
 
         if self._command_type == QUERY_SCRIPT:
-            _payload_definition.insert( 1, ( FIELD_STRING, 'sql' ) )
+            _payload_definition.insert(1, (FIELD_STRING, 'sql'))
 
-        _payload_definition.append( ( FIELD_INT, 0 ) )
+        _payload_definition.append((FIELD_INT, 0))
 
         payload = b''.join(
-            self._encode_field( x ) for x in _payload_definition
+            self._encode_field(x) for x in _payload_definition
         )
 
-        self._append( ( FIELD_BYTE, self._mod_byte ) )
-        self._append( ( FIELD_STRING, payload ) )
+        self._append((FIELD_BYTE, self._mod_byte))
+        self._append((FIELD_STRING, payload))
 
-        return super( CommandMessage, self ).prepare()
+        return super(CommandMessage, self).prepare()
 
     def fetch_response(self):
 
@@ -138,10 +137,11 @@ class CommandMessage(BaseMessage):
             return self
 
         # decode header only
-        super( CommandMessage, self ).fetch_response()
+        super(CommandMessage, self).fetch_response()
 
         if self._command_type == QUERY_ASYNC:
             self._read_async_records()
+
         else:
             return self._read_sync()
 
@@ -149,10 +149,12 @@ class CommandMessage(BaseMessage):
         if _command_type in QUERY_TYPES:
             # user choice if present
             self._command_type = _command_type
+
         else:
             raise PyOrientBadMethodCallException(
                 _command_type + ' is not a valid command type', []
             )
+
         return self
 
     def set_fetch_plan(self, _fetch_plan):
@@ -171,32 +173,32 @@ class CommandMessage(BaseMessage):
 
         # type of response
         # decode body char with flag continue ( Header already read )
-        response_type = self._decode_field( FIELD_CHAR )
+        response_type = self._decode_field(FIELD_CHAR)
         if not isinstance(response_type, str):
             response_type = response_type.decode()
         res = []
         if response_type == 'n':
-            self._append( FIELD_CHAR )
-            super( CommandMessage, self ).fetch_response(True)
+            self._append(FIELD_CHAR)
+            super(CommandMessage, self).fetch_response(True)
             # end Line \x00
             return None
         elif response_type == 'r' or response_type == 'w':
-            res = [ self._read_record() ]
-            self._append( FIELD_CHAR )
+            res = [self._read_record()]
+            self._append(FIELD_CHAR)
             # end Line \x00
-            _res = super( CommandMessage, self ).fetch_response(True)
+            _res = super(CommandMessage, self).fetch_response(True)
             if response_type == 'w':
-                res = [ res[0].oRecordData['result'] ]
+                res = [res[0].oRecordData['result']]
         elif response_type == 'a':
-            self._append( FIELD_STRING )
-            self._append( FIELD_CHAR )
-            res = [ super( CommandMessage, self ).fetch_response(True)[0] ]
+            self._append(FIELD_STRING)
+            self._append(FIELD_CHAR)
+            res = [super(CommandMessage, self).fetch_response(True)[0]]
         elif response_type == 'l':
-            self._append( FIELD_INT )
-            list_len = super( CommandMessage, self ).fetch_response(True)[0]
+            self._append(FIELD_INT)
+            list_len = super(CommandMessage, self).fetch_response(True)[0]
 
             for n in range(0, list_len):
-                res.append( self._read_record() )
+                res.append(self._read_record())
 
             # async-result-type can be:
             # 0: no records remain to be fetched
@@ -209,7 +211,7 @@ class CommandMessage(BaseMessage):
         else:
             # this should be never happen, used only to debug the protocol
             msg = b''
-            self._orientSocket._socket.setblocking( 0 )
+            self._orientSocket._socket.setblocking(0)
             m = self._orientSocket.read(1)
             while m != "":
                 msg += m
@@ -221,9 +223,11 @@ class CommandMessage(BaseMessage):
         if hasattr(func, '__call__'):
             self._callback = func
         else:
-            raise PyOrientBadMethodCallException( func + " is not a callable "
-                                                         "function", [])
+            raise PyOrientBadMethodCallException(func + " is not a callable "
+                                                        "function", [])
         return self
+
+
 #
 # TX COMMIT
 #
@@ -280,22 +284,22 @@ class _TXCommitMessage(BaseMessage):
         self._temp_cluster_position_seq = -2
 
         # order matters
-        self._append(( FIELD_BYTE, TX_COMMIT_OP ))
+        self._append((FIELD_BYTE, TX_COMMIT_OP))
         self._command = TX_COMMIT_OP
 
     @need_connected
     def prepare(self, params=None):
 
-        self._append(( FIELD_INT, self.get_transaction_id() ))
-        self._append(( FIELD_BOOLEAN, True ))
+        self._append((FIELD_INT, self.get_transaction_id()))
+        self._append((FIELD_BOOLEAN, True))
 
         for k, v in enumerate(self._operation_stack):
-            self._append(( FIELD_BYTE, chr(1) ))  # start of records
+            self._append((FIELD_BYTE, chr(1)))  # start of records
             for field in v:
                 self._append(field)
 
-        self._append(( FIELD_BYTE, chr(0) ))
-        self._append(( FIELD_STRING, "" ))
+        self._append((FIELD_BYTE, chr(0)))
+        self._append((FIELD_STRING, ""))
 
         return super(_TXCommitMessage, self).prepare()
 
@@ -400,7 +404,7 @@ class _TXCommitMessage(BaseMessage):
 
         self.dump_streams()
 
-        return self._operation_records #  [self._operation_records, result]
+        return self._operation_records  # [self._operation_records, result]
 
     def attach(self, operation):
 
@@ -411,18 +415,18 @@ class _TXCommitMessage(BaseMessage):
         if isinstance(operation, RecordUpdateMessage):
             o_record_enc = self.get_serializer().encode(getattr(operation, "_record_content"))
             self._operation_stack.append((
-                ( FIELD_BYTE, chr(1) ),
-                ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
-                ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
-                ( FIELD_BYTE, getattr(operation, "_record_type") ),
-                ( FIELD_INT, int(getattr(operation, "_record_version")) ),
-                ( FIELD_STRING, o_record_enc ),
+                (FIELD_BYTE, chr(1)),
+                (FIELD_SHORT, int(getattr(operation, "_cluster_id"))),
+                (FIELD_LONG, int(getattr(operation, "_cluster_position"))),
+                (FIELD_BYTE, getattr(operation, "_record_type")),
+                (FIELD_INT, int(getattr(operation, "_record_version"))),
+                (FIELD_STRING, o_record_enc),
             ))
 
             if self.get_protocol() >= 23:
                 self._operation_stack[-1] = \
-                    self._operation_stack[-1] +\
-                    ( ( FIELD_BOOLEAN, bool(getattr(operation, "_update_content") ) ), )
+                    self._operation_stack[-1] + \
+                    ((FIELD_BOOLEAN, bool(getattr(operation, "_update_content"))),)
 
             self._pre_operation_records[
                 str(getattr(operation, "_cluster_position"))
@@ -430,20 +434,20 @@ class _TXCommitMessage(BaseMessage):
 
         elif isinstance(operation, RecordDeleteMessage):
             self._operation_stack.append((
-                ( FIELD_BYTE, chr(2) ),
-                ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
-                ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
-                ( FIELD_BYTE, getattr(operation, "_record_type") ),
-                ( FIELD_INT, int(getattr(operation, "_record_version")) ),
+                (FIELD_BYTE, chr(2)),
+                (FIELD_SHORT, int(getattr(operation, "_cluster_id"))),
+                (FIELD_LONG, int(getattr(operation, "_cluster_position"))),
+                (FIELD_BYTE, getattr(operation, "_record_type")),
+                (FIELD_INT, int(getattr(operation, "_record_version"))),
             ))
         elif isinstance(operation, RecordCreateMessage):
             o_record_enc = self.get_serializer().encode(getattr(operation, "_record_content"))
             self._operation_stack.append((
-                ( FIELD_BYTE, chr(3) ),
-                ( FIELD_SHORT, int(-1) ),
-                ( FIELD_LONG, int(self._temp_cluster_position_seq) ),
-                ( FIELD_BYTE, getattr(operation, "_record_type") ),
-                ( FIELD_STRING, o_record_enc ),
+                (FIELD_BYTE, chr(3)),
+                (FIELD_SHORT, int(-1)),
+                (FIELD_LONG, int(self._temp_cluster_position_seq)),
+                (FIELD_BYTE, getattr(operation, "_record_type")),
+                (FIELD_STRING, o_record_enc),
             ))
             self._pre_operation_records[
                 str(self._temp_cluster_position_seq)
@@ -467,7 +471,7 @@ class _TXCommitMessage(BaseMessage):
 
             # write in extended mode to make it easy to read
             # seconds * 1000000 to get the equivalent microseconds
-            _sm = ( delta.seconds + delta.days * 24 * 3600 ) * 10 ** 6
+            _sm = (delta.seconds + delta.days * 24 * 3600) * 10 ** 6
             _ms = delta.microseconds
             _mstime = _sm + _ms
             # remove sign
@@ -478,7 +482,7 @@ class _TXCommitMessage(BaseMessage):
             # we need only a transaction unique for this session
             # not a real UUID
             if _mstime & 0x80000000:
-                self._tx_id = int(( _mstime - 0x80000000 ) & 0xFFFFFFFF)
+                self._tx_id = int((_mstime - 0x80000000) & 0xFFFFFFFF)
             else:
                 self._tx_id = int(_mstime & 0xFFFFFFFF)
 
@@ -512,6 +516,7 @@ class _TXCommitMessage(BaseMessage):
         self._orientSocket.in_transaction = False
         return self
 
+
 #
 # TX COMMIT facade
 #
@@ -522,7 +527,7 @@ class TxCommitMessage:
         pass
 
     def attach(self, operation):
-        self._transaction.attach( operation )
+        self._transaction.attach(operation)
         return self
 
     def begin(self):

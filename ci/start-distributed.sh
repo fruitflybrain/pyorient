@@ -67,14 +67,17 @@ else
 fi
 
 echo "Installing databases: "
-echo "cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts \"${ODB_DIR}/databases/\""
-cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts "${ODB_DIR}/databases/"
+echo "cp -a ${PARENT_DIR}/ci/default_databases/GratefulDeadConcerts \"${ODB_DIR}/databases/\""
+cp -a ${PARENT_DIR}/ci/default_databases/GratefulDeadConcerts "${ODB_DIR}/databases/"
 
-echo "cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph \"${ODB_DIR}/databases/\""
-cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
+echo "cp -a ${PARENT_DIR}/ci/default_databases/VehicleHistoryGraph \"${ODB_DIR}/databases/\""
+cp -a ${PARENT_DIR}/ci/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
 
 echo "cp ${PARENT_DIR}/ci/orientdb-distr-hazelcast.xml \"${ODB_DIR}/config/\""
 cp ${PARENT_DIR}/ci/orientdb-distr-hazelcast.xml ${ODB_DIR}/config/
+
+echo "cp ${PARENT_DIR}/ci/security.json \"${ODB_DIR}/config/\""
+cp ${PARENT_DIR}/ci/security.json ${ODB_DIR}/config/
 
 # Start OrientDB in background.
 echo "--- Starting 2 instance of OrientDB ---"

@@ -323,12 +323,13 @@ class SerializationTestCase(unittest.TestCase):
         db_name = "test_escape"
         try:
             DB.db_drop(db_name)
-        except pyorient.PyOrientCommandException as e:
+
+        except pyorient.PyOrientStorageException as e:
             print(e)
+
         finally:
             db = DB.db_create(db_name, pyorient.DB_TYPE_GRAPH,
                               pyorient.STORAGE_TYPE_MEMORY)
-            pass
 
         cluster_info = DB.db_open(
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""

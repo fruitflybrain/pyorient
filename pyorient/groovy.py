@@ -42,12 +42,6 @@ import hashlib
 from .scripts import ScriptFunction
 from .utils import u
 
-from sys import version_info
-
-ADD_DEL_FLAGS = tuple()
-if version_info[0] == 3:
-    if version_info[1] >= 6:
-        ADD_DEL_FLAGS = (0, 0)
 
 #
 # The scanner code came from the TED project.
@@ -58,23 +52,23 @@ class Scanner(object):
         self.lexicon = lexicon
         self.group_pattern = self._get_group_pattern(flags)
 
-    def _get_group_pattern(self,flags):
+    def _get_group_pattern(self, flags):
         # combine phrases into a compound pattern
         patterns = []
         sub_pattern = sre_parse.Pattern()
         sub_pattern.flags = flags
         for phrase, action in self.lexicon:
             patterns.append(sre_parse.SubPattern(sub_pattern, [
-                (SUBPATTERN, (len(patterns) + 1, ) + ADD_DEL_FLAGS + (sre_parse.parse(phrase, flags), )),
-                ]))
-        #sub_pattern.groups = len(patterns) + 1
+                (SUBPATTERN, (len(patterns) + 1, sre_parse.parse(phrase, flags))),
+            ]))
+        # sub_pattern.groups = len(patterns) + 1
         group_pattern = sre_parse.SubPattern(sub_pattern, [(BRANCH, (None, patterns))])
         return sre_compile.compile(group_pattern)
 
-    def get_multiline(self,f,m):
+    def get_multiline(self, f, m):
         content = []
         next_line = ''
-        while not re.search("^}",next_line):
+        while not re.search("^}", next_line):
             content.append(next_line)
             try:
                 next_line = next(f)
@@ -85,7 +79,7 @@ class Scanner(object):
         content = "".join(content)
         return content, next_line
 
-    def get_item(self,f,line):
+    def get_item(self, f, line):
         # IMPORTANT: Each item needs to be added sequentially
         # to make sure the record data is grouped properly
         # so make sure you add content by calling callback()
@@ -93,22 +87,22 @@ class Scanner(object):
         match = self.group_pattern.scanner(line).match()
         if not match:
             return
-        callback = self.lexicon[match.lastindex-1][1]
+        callback = self.lexicon[match.lastindex - 1][1]
         if "def" in match.group():
             # this is a multi-line get
             first_line = match.group()
-            body, current_line = self.get_multiline(f,match)
+            body, current_line = self.get_multiline(f, match)
             sections = [first_line, body, current_line]
             content = "\n".join(sections).strip()
-            callback(self,content)
+            callback(self, content)
             if current_line:
-                self.get_item(f,current_line)
+                self.get_item(f, current_line)
         else:
-            callback(self,match.group(1))
+            callback(self, match.group(1))
 
     def scan(self, fin):
         for line in fin:
-            self.get_item(fin,line)
+            self.get_item(fin, line)
 
 
 class GroovyScripts(object):
@@ -131,21 +125,21 @@ class GroovyScripts(object):
 
     def include(self, groovy_path):
         # handler format: (pattern, callback)
-        handlers = [ ("^def( .*)", self.add_function), ]
+        handlers = [("^def( .*)", self.add_function), ]
 
         with io.open(groovy_path, 'r', encoding='utf-8') as groovy_file:
             Scanner(handlers).scan(groovy_file)
 
     def parse(self, groovy_str):
-        handlers = [ ("^def( .*)", self.add_function), ]
+        handlers = [("^def( .*)", self.add_function), ]
 
-        scanner = Scanner(handlers).scan(io.StringIO(u(groovy_str)))
+        scanner = Scanner(handlers).scan(io.StringIO(groovy_str))
 
     def get_functions(self):
         return self.functions
 
     # Scanner Callback
-    def add_function(self,scanner,token):
+    def add_function(self, scanner, token):
         function_definition = token
         function_signature = self._get_function_signature(function_definition)
         function_name = self._get_function_name(function_signature)
@@ -161,25 +155,24 @@ class GroovyScripts(object):
                                   , function_body, sha1)
         self.functions[function_name] = function
 
-    def _get_function_signature(self,function_definition):
+    def _get_function_signature(self, function_definition):
         pattern = '^def(.*){'
-        return re.search(pattern,function_definition).group(1).strip()
+        return re.search(pattern, function_definition).group(1).strip()
 
-    def _get_function_name(self,function_signature):
+    def _get_function_name(self, function_signature):
         pattern = '^(.*)\('
-        return re.search(pattern,function_signature).group(1).strip()
+        return re.search(pattern, function_signature).group(1).strip()
 
-    def _get_function_body(self,function_definition):
+    def _get_function_body(self, function_definition):
         # remove the first and last lines, and return just the function body
         lines = function_definition.split('\n')
         body_lines = lines[+1:-1]
         function_body = "\n".join(body_lines).strip()
         return function_body
 
-    def _get_sha1(self,function_definition):
+    def _get_sha1(self, function_definition):
         # this is used to detect version changes
         function_definition_bytes = function_definition.encode('utf-8')
         sha1 = hashlib.sha1()
         sha1.update(function_definition_bytes)
         return sha1.hexdigest()
-
