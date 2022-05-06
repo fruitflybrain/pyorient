@@ -325,7 +325,7 @@ class Batch(ExpressionMixin, CacheMixin):
         else:
             return '{}'.format(variables)
 
-    INVALID_CHARS = frozenset(''.join(c for c in string.punctuation if c is not '_') + string.whitespace)
+    INVALID_CHARS = frozenset(''.join(c for c in string.punctuation if c != '_') + string.whitespace)
 
     @staticmethod
     def default_name_cleaner(name):
