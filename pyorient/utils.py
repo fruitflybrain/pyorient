@@ -117,3 +117,14 @@ def to_str(x):
 
 def to_unicode(x):
     return str(x)
+
+
+def get_hash(r):
+    if isinstance(r, tuple):
+        if r[0] == 'OrientRecordLink':
+            rid = '#{}:{}'.format(r[1], r[2])
+        else:
+            raise TypeError('Not sure what the output format is.')
+    elif isinstance(r, OrientRecordLink):
+        rid = r.get_hash()
+    return rid

@@ -15,7 +15,7 @@ from pyorient.constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP
     FIELD_STRING, FIELD_BYTE, FIELD_BOOLEAN, INT, SHORT, LONG, BOOLEAN, BYTE, BYTES, STRING, STRINGS, \
     RECORD, LINK, CHAR, DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from pyorient.hexdump import hexdump
-from pyorient.utils import need_connected, need_db_opened, is_debug_active
+from pyorient.utils import need_connected, need_db_opened, is_debug_active, get_hash
 from pyorient.otypes import OrientRecord, OrientCluster, OrientVersion, OrientRecordLink, OrientNode
 
 
@@ -536,17 +536,6 @@ class BaseMessage(object):
         self._input_buffer = b''
 
         return res
-
-def get_hash(r):
-    if isinstance(r, tuple):
-        if r[0] == 'OrientRecordLink':
-            rid = '#{}:{}'.format(r[1], r[2])
-        else:
-            raise TypeError('Not sure what the output format is.')
-    elif isinstance(r, OrientRecordLink):
-        rid = r.get_hash()
-    return rid
-
 
 
 class DbOpenMessage(BaseMessage):
