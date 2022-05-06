@@ -43,8 +43,11 @@ class Graph(object):
                                         config.serialization_type,
                                         config.serialize_props)
 		# Must set it to True for OrientDB > 3.1, but has connection issue. Use 3.0.x for now.
-        self.client.set_session_token(True)
-        self.client.connect(config.user, config.cred)
+        try:
+            self.client.connect(config.user, config.cred)
+        except pyorient.PyOrientDatabaseException:
+            self.client.set_session_token(True)
+            self.client.connect(config.user, config.cred)
 
         self.config = config
 
