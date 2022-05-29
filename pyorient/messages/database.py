@@ -528,8 +528,8 @@ class BaseMessage(object):
                 dict(
                     __o_storage=data,
                     __o_class=data.pop('class', class_name),
-                    __version=data.pop('version', __res['version']),
-                    __rid= get_hash(data.pop('rid')) if 'rid' in data is not None else __res['rid']
+                    __version=__res['version'],
+                    __rid= get_hash(data.pop('rid') if 'rid' in data else __res['rid'])
                 )
             )
 
