@@ -529,7 +529,7 @@ class BaseMessage(object):
                     __o_storage=data,
                     __o_class=data.pop('class', class_name),
                     __version=__res['version'],
-                    __rid= get_hash(data.pop('rid') if 'rid' in data else __res['rid'])
+                    __rid= get_hash(data.pop('rid')) if 'rid' in data else __res['rid']
                 )
             )
 
